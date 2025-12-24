@@ -27,20 +27,24 @@ export default async function handler(req, res) {
 
       visitorKey = crypto.randomUUID();
 
+      // simpan visitor dulu
       const { error: visitorError } = await supabase.from("visitors").insert({
         visitor_key: visitorKey,
         name,
-        total_visit: 1
+        total_visit: 1,
       });
 
-      if (visitorError) throw visitorError;
+      if (visitorError) throw visitorError; // pastikan insert berhasil dulu
 
+      // baru simpan scan
       const { error: scanError } = await supabase.from("scans").insert({
         visitor_key: visitorKey,
-        outlet_code: outlet
+        outlet_code: outlet,
       });
 
       if (scanError) throw scanError;
+
+      // set cookie & redirect...
 
       res.setHeader(
         "Set-Cookie",
@@ -70,12 +74,16 @@ export default async function handler(req, res) {
 
     const { error: scanError } = await supabase.from("scans").insert({
       visitor_key: visitorKey,
-      outlet_code: outlet
+      outlet_code: outlet,
     });
 
     if (scanError) throw scanError;
 
-    return res.json({ status: "return", visit, name: visitor?.name || "Anonim" });
+    return res.json({
+      status: "return",
+      visit,
+      name: visitor?.name || "Anonim",
+    });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: err.message });
