@@ -6,7 +6,6 @@ const supabase = createClient(
   process.env.SUPABASE_ANON_KEY
 );
 
-// helper cookie
 function getCookie(req, name) {
   const cookies = req.headers.cookie;
   if (!cookies) return null;
@@ -17,77 +16,68 @@ function getCookie(req, name) {
 export default async function handler(req, res) {
   try {
     const outlet = req.query.outlet || "UNKNOWN";
+    const name = req.query.name;
     let visitorKey = getCookie(req, "visitor_key");
 
     // Visitor baru
     if (!visitorKey) {
-      visitorKey = crypto.randomUUID();
-      const name = req.query.name;
-
-      // Jika belum ada nama, tampilkan form input
       if (!name) {
-        return res.status(200).send(`
-          <!DOCTYPE html>
-          <html>
-          <head><title>Input Nama</title></head>
-          <body>
-            <h2>Masukkan Nama Anda</h2>
-            <form method="GET">
-              <input type="text" name="name" required>
-              <button type="submit">Kirim</button>
-            </form>
-          </body>
-          </html>
-        `);
+        return res.status(400).json({ error: "Nama harus diisi" });
       }
 
-      // Simpan visitor baru
-      await supabase.from("visitors").insert({
+      visitorKey = crypto.randomUUID();
+
+      const { error: visitorError } = await supabase.from("visitors").insert({
         visitor_key: visitorKey,
         name,
         total_visit: 1
       });
 
-      // Simpan scan
-      await supabase.from("scans").insert({
+      if (visitorError) throw visitorError;
+
+      const { error: scanError } = await supabase.from("scans").insert({
         visitor_key: visitorKey,
         outlet_code: outlet
       });
 
-      // Set cookie
+      if (scanError) throw scanError;
+
       res.setHeader(
         "Set-Cookie",
         `visitor_key=${visitorKey}; Path=/; Max-Age=31536000; SameSite=Lax`
       );
 
-      return res.redirect(`/visit.html?status=new&visit=1&name=${encodeURIComponent(name)}`);
+      return res.json({ status: "new", visit: 1, name });
     }
 
     // Visitor lama
-    const { data: visitor } = await supabase
+    const { data: visitor, error: fetchError } = await supabase
       .from("visitors")
       .select("*")
       .eq("visitor_key", visitorKey)
       .maybeSingle();
 
+    if (fetchError) throw fetchError;
+
     const visit = (visitor?.total_visit || 0) + 1;
 
-    await supabase
+    const { error: updateError } = await supabase
       .from("visitors")
       .update({ total_visit: visit })
       .eq("visitor_key", visitorKey);
 
-    await supabase.from("scans").insert({
+    if (updateError) throw updateError;
+
+    const { error: scanError } = await supabase.from("scans").insert({
       visitor_key: visitorKey,
       outlet_code: outlet
     });
 
-    return res.redirect(`/visit.html?status=return&visit=${visit}&name=${encodeURIComponent(visitor?.name || "Anonim")}`);
+    if (scanError) throw scanError;
+
+    return res.json({ status: "return", visit, name: visitor?.name || "Anonim" });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({
-      error: "Server error",
-      message: err.message
-    });
+    return res.status(500).json({ error: err.message });
   }
 }

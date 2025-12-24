@@ -1,59 +1,57 @@
 <!DOCTYPE html>
-<html lang="id">
+<html>
 <head>
-  <meta charset="UTF-8">
   <title>Ini Kebun ☕</title>
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    body {
-      font-family: system-ui;
-      background: #f6f6f6;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
-    .card {
-      background: white;
-      padding: 24px;
-      border-radius: 16px;
-      text-align: center;
-      width: 90%;
-      max-width: 400px;
-      box-shadow: 0 10px 25px rgba(0,0,0,.1);
-    }
-    h1 { margin-bottom: 10px }
-    .visit {
-      font-size: 48px;
-      font-weight: bold;
-      color: #2c7;
-    }
+    body { font-family: system-ui; display:flex; justify-content:center; align-items:center; height:100vh; background:#f6f6f6; }
+    .card { background:white; padding:24px; border-radius:16px; text-align:center; width:90%; max-width:400px; box-shadow:0 10px 25px rgba(0,0,0,.1); }
+    input { padding:8px; margin-top:8px; width:80%; }
+    button { margin-top:12px; padding:8px 16px; }
+    .visit { font-size:48px; font-weight:bold; color:#2c7; margin-top:12px; }
   </style>
 </head>
 <body>
-
 <div class="card">
-  <h1 id="title">☕ Ini Kebun</h1>
-  <p id="message"></p>
+  <h1>☕ Ini Kebun</h1>
+  <div id="formContainer"></div>
   <div class="visit" id="visitCount"></div>
 </div>
 
 <script>
-  const params = new URLSearchParams(window.location.search)
-  const status = params.get('status')
-  const visit = params.get('visit')
+const params = new URLSearchParams(window.location.search);
+const outlet = params.get('outlet') || 'INIKEBUN01';
+const visitorKey = document.cookie.match(/visitor_key=([^;]+)/)?.[1];
 
-  const msg = document.getElementById('message')
-  const count = document.getElementById('visitCount')
+async function scanVisitor(name) {
+  const url = `/api/scan?outlet=${outlet}&name=${encodeURIComponent(name)}`;
+  const res = await fetch(url);
+  return res.json();
+}
 
-  if (status === 'new') {
-    msg.innerText = '🎉 Selamat datang! Kamu pengunjung baru'
-  } else {
-    msg.innerText = '🙏 Terima kasih sudah kembali'
-  }
+const container = document.getElementById('formContainer');
+const visitCount = document.getElementById('visitCount');
 
-  count.innerText = visit + 'x'
+if (!visitorKey) {
+  container.innerHTML = `
+    <input type="text" id="nameInput" placeholder="Masukkan nama" required>
+    <button id="submitBtn">Kirim</button>
+  `;
+  document.getElementById('submitBtn').onclick = async () => {
+    const name = document.getElementById('nameInput').value.trim();
+    if (!name) return alert('Nama wajib diisi');
+    const data = await scanVisitor(name);
+    container.innerHTML = `<p>${data.status === 'new' ? '🎉 Selamat datang!' : '🙏 Terima kasih sudah kembali'}, ${data.name}</p>`;
+    visitCount.innerText = data.visit + 'x';
+  };
+} else {
+  // Visitor lama, fetch untuk update visit
+  scanVisitor('').then(data => {
+    container.innerHTML = `<p>${data.status === 'return' ? '🙏 Terima kasih sudah kembali' : '🎉 Selamat datang'}, ${data.name}</p>`;
+    visitCount.innerText = data.visit + 'x';
+  });
+}
 </script>
-
 </body>
 </html>

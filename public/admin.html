@@ -13,12 +13,9 @@
   </style>
 </head>
 <body>
-
 <h1>📊 Dashboard Ini Kebun</h1>
-
 <div class="box">👥 Total Pengunjung: <b id="visitors">-</b></div>
 <div class="box">📸 Total Scan: <b id="scans">-</b></div>
-
 <h3>🧍 Daftar Pengunjung</h3>
 <table>
   <thead>
@@ -30,7 +27,6 @@
   </thead>
   <tbody id="visitorList"></tbody>
 </table>
-
 <h3>🕒 Scan Terakhir</h3>
 <ul id="list"></ul>
 
@@ -38,35 +34,23 @@
 fetch('/api/admin-stats')
   .then(res => res.json())
   .then(data => {
-    document.getElementById('visitors').innerText = data.totalVisitors
-    document.getElementById('scans').innerText = data.totalScans
+    document.getElementById('visitors').innerText = data.totalVisitors;
+    document.getElementById('scans').innerText = data.totalScans;
 
-    // Daftar visitor
-    const tbody = document.getElementById('visitorList')
-    tbody.innerHTML = '' // bersihkan dulu
+    const tbody = document.getElementById('visitorList');
     data.visitors.forEach(v => {
-      const visitorName = v.name || 'Anonim'
-      const tr = document.createElement('tr')
-      tr.innerHTML = `
-        <td>${visitorName}</td>
-        <td>${v.total_visit}</td>
-        <td>${new Date(v.created_at).toLocaleDateString()}</td>
-      `
-      tbody.appendChild(tr)
-    })
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${v.name || 'Anonim'}</td><td>${v.total_visit}</td><td>${new Date(v.created_at).toLocaleDateString()}</td>`;
+      tbody.appendChild(tr);
+    });
 
-    // Daftar scan terakhir
-    const list = document.getElementById('list')
-    list.innerHTML = '' // bersihkan dulu
+    const list = document.getElementById('list');
     data.latest.forEach(item => {
-      const li = document.createElement('li')
-      li.innerText = `${item.outlet_code} — ${new Date(item.created_at).toLocaleString()}`
-      list.appendChild(li)
-    })
-  })
-  .catch(err => console.error('Error fetch admin-stats:', err))
-
+      const li = document.createElement('li');
+      li.innerText = `${item.visitor_key} — ${item.outlet_code} — ${new Date(item.created_at).toLocaleString()}`;
+      list.appendChild(li);
+    });
+  });
 </script>
-
 </body>
 </html>
