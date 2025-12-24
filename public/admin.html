@@ -38,7 +38,7 @@
 fetch('/api/admin-stats')
   .then(res => res.json())
   .then(data => {
-    // total visitor dan scan
+    // gunakan totalVisitors & totalScans
     document.getElementById('visitors').innerText = data.totalVisitors
     document.getElementById('scans').innerText = data.totalScans
 
@@ -64,6 +64,7 @@ fetch('/api/admin-stats')
     })
   })
   .catch(err => console.error('Error fetch admin-stats:', err))
+
 </script>
 
 </body>
