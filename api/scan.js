@@ -9,7 +9,7 @@ const supabase = createClient(
 function getCookie(req, name) {
   const cookies = req.headers.cookie;
   if (!cookies) return null;
-  const match = cookies.split(";").find(c => c.trim().startsWith(name + "="));
+  const match = cookies.split(";").find((c) => c.trim().startsWith(name + "="));
   return match ? match.split("=")[1] : null;
 }
 
@@ -24,18 +24,69 @@ export default async function handler(req, res) {
       // Jika belum ada nama, tampilkan form
       if (!nameFromQuery) {
         return res.status(200).send(`
-          <!DOCTYPE html>
-          <html>
-          <head><meta charset="UTF-8"><title>Input Nama</title></head>
-          <body>
-            <h2>Masukkan Nama Anda</h2>
-            <form method="GET">
-              <input type="text" name="name" required placeholder="Nama Anda">
-              <button type="submit">Kirim</button>
-            </form>
-          </body>
-          </html>
-        `);
+      <!DOCTYPE html>
+      <html lang="id">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Selamat Datang</title>
+        <style>
+          * { box-sizing: border-box; margin: 0; padding: 0; }
+          body {
+            font-family: system-ui, sans-serif;
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: #fff;
+          }
+          .container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 40px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+          }
+          h1 { margin-bottom: 20px; font-size: 24px; }
+          input {
+            padding: 12px;
+            width: 100%;
+            border-radius: 10px;
+            border: none;
+            margin-bottom: 20px;
+            font-size: 16px;
+          }
+          button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 10px;
+            background: #fff;
+            color: #2575fc;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            transition: 0.3s;
+          }
+          button:hover {
+            background: #e0e0e0;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <h1>Selamat Datang!</h1>
+          <p>Masukkan nama Anda untuk mulai scan</p>
+          <form method="GET">
+            <input type="text" name="name" placeholder="Nama Anda" required>
+            <button type="submit">Mulai</button>
+          </form>
+        </div>
+      </body>
+      </html>
+    `);
       }
 
       visitorKey = crypto.randomUUID();
@@ -45,14 +96,14 @@ export default async function handler(req, res) {
       const { error: visitorError } = await supabase.from("visitors").insert({
         visitor_key: visitorKey,
         name,
-        total_visit: 1
+        total_visit: 1,
       });
       if (visitorError) throw visitorError;
 
       // Insert scan pertama
       const { error: scanError } = await supabase.from("scans").insert({
         visitor_key: visitorKey,
-        outlet_code: outlet
+        outlet_code: outlet,
       });
       if (scanError) throw scanError;
 
@@ -62,7 +113,9 @@ export default async function handler(req, res) {
         `visitor_key=${visitorKey}; Path=/; Max-Age=31536000; SameSite=Lax`
       );
 
-      return res.redirect(`/visit.html?status=new&visit=1&name=${encodeURIComponent(name)}`);
+      return res.redirect(
+        `/visit.html?status=new&visit=1&name=${encodeURIComponent(name)}`
+      );
     }
 
     // ===== Visitor lama =====
@@ -74,7 +127,8 @@ export default async function handler(req, res) {
     if (fetchError) throw fetchError;
 
     // Kalau cookie ada tapi visitor tidak ada (misal DB reset)
-    if (!visitor) return res.redirect(`/api/scan?outlet=${encodeURIComponent(outlet)}`);
+    if (!visitor)
+      return res.redirect(`/api/scan?outlet=${encodeURIComponent(outlet)}`);
 
     const visit = (visitor.total_visit || 0) + 1;
 
@@ -88,12 +142,15 @@ export default async function handler(req, res) {
     // Insert scan baru
     const { error: scanError } = await supabase.from("scans").insert({
       visitor_key: visitorKey,
-      outlet_code: outlet
+      outlet_code: outlet,
     });
     if (scanError) throw scanError;
 
-    return res.redirect(`/visit.html?status=return&visit=${visit}&name=${encodeURIComponent(visitor.name)}`);
-
+    return res.redirect(
+      `/visit.html?status=return&visit=${visit}&name=${encodeURIComponent(
+        visitor.name
+      )}`
+    );
   } catch (err) {
     console.error(err);
     return res.status(500).send(`<h1>Server Error</h1><p>${err.message}</p>`);
