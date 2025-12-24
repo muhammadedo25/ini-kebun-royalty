@@ -35,7 +35,7 @@
 <ul id="list"></ul>
 
 <script>
-ffetch('/api/admin-stats')
+fetch('/api/admin-stats')
   .then(res => res.json())
   .then(data => {
     document.getElementById('visitors').innerText = data.totalVisitors
