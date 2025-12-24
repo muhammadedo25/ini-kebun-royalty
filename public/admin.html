@@ -35,15 +35,15 @@
 <ul id="list"></ul>
 
 <script>
-fetch('/api/admin-stats')
+ffetch('/api/admin-stats')
   .then(res => res.json())
   .then(data => {
-    // gunakan totalVisitors & totalScans
     document.getElementById('visitors').innerText = data.totalVisitors
     document.getElementById('scans').innerText = data.totalScans
 
-    // daftar visitor
+    // Daftar visitor
     const tbody = document.getElementById('visitorList')
+    tbody.innerHTML = '' // bersihkan dulu
     data.visitors.forEach(v => {
       const visitorName = v.name || 'Anonim'
       const tr = document.createElement('tr')
@@ -55,8 +55,9 @@ fetch('/api/admin-stats')
       tbody.appendChild(tr)
     })
 
-    // daftar scan terakhir
+    // Daftar scan terakhir
     const list = document.getElementById('list')
+    list.innerHTML = '' // bersihkan dulu
     data.latest.forEach(item => {
       const li = document.createElement('li')
       li.innerText = `${item.outlet_code} — ${new Date(item.created_at).toLocaleString()}`
