@@ -24,6 +24,7 @@ const params = new URLSearchParams(window.location.search);
 const status = params.get('status');
 const visit = params.get('visit');
 const name = params.get('name') || "Anonim";
+const createdAt = params.get('created_at'); // ambil dari query jika ada
 
 document.getElementById('title').innerText = `☕ Halo, ${name}!`;
 document.getElementById('visitCount').innerText = visit + 'x';
@@ -33,7 +34,15 @@ if(status === 'new'){
 }else{
   document.getElementById('message').innerText = '🙏 Terima kasih sudah kembali';
 }
+
+// konversi UTC ke WIB jika ada createdAt
+if(createdAt){
+  const date = new Date(createdAt);
+  const wib = date.toLocaleString("id-ID", { timeZone: "Asia/Jakarta" });
+  document.getElementById('message').innerText += `\n(Waktu scan: ${wib})`;
+}
 </script>
+
 
 </body>
 </html>

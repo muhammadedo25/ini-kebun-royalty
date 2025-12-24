@@ -45,7 +45,7 @@ fetch('/api/admin-stats')
     const list = document.getElementById('list');
     data.latest.forEach(item => {
       const li = document.createElement('li');
-      li.innerText = `${item.visitor_key} — ${item.outlet_code} — ${new Date(item.created_at).toLocaleString()}`;
+      li.innerText = `${item.name} — ${item.outlet_code} — ${new Date(item.created_at).toLocaleString()}`;
       list.appendChild(li);
     });
   });
