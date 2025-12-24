@@ -22,9 +22,9 @@ export default async function handler(req, res) {
     // Visitor baru
     if (!visitorKey) {
       visitorKey = crypto.randomUUID();
-      const name = req.query.name; // optional: jika ada dari form
+      const name = req.query.name;
 
-      // jika belum ada nama, tampil form input nama
+      // Jika belum ada nama, tampilkan form input
       if (!name) {
         return res.status(200).send(`
           <!DOCTYPE html>
@@ -41,20 +41,20 @@ export default async function handler(req, res) {
         `);
       }
 
-      // simpan visitor baru
+      // Simpan visitor baru
       await supabase.from("visitors").insert({
         visitor_key: visitorKey,
         name,
         total_visit: 1
       });
 
-      // simpan scan
+      // Simpan scan
       await supabase.from("scans").insert({
         visitor_key: visitorKey,
         outlet_code: outlet
       });
 
-      // set cookie
+      // Set cookie
       res.setHeader(
         "Set-Cookie",
         `visitor_key=${visitorKey}; Path=/; Max-Age=31536000; SameSite=Lax`
