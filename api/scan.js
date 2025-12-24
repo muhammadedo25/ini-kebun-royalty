@@ -42,7 +42,10 @@ export default async function handler(req, res) {
         `visitor_key=${visitorKey}; Path=/; Max-Age=31536000; SameSite=Lax`
       )
 
-      return res.json({ status: 'new', visit: 1 })
+      return res.redirect(
+  `/visit.html?status=new&visit=1`
+)
+
     }
 
     // VISITOR LAMA
@@ -64,7 +67,10 @@ export default async function handler(req, res) {
       outlet_code: outlet
     })
 
-    return res.json({ status: 'return', visit })
+    return res.redirect(
+  `/visit.html?status=return&visit=${visit}`
+)
+
 
   } catch (err) {
     console.error(err)

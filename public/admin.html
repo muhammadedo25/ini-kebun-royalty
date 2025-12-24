@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin Ini Kebun</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: system-ui; padding: 20px }
+    .box { padding: 16px; border-radius: 12px; background: #f3f3f3; margin-bottom: 12px }
+  </style>
+</head>
+<body>
+
+<h1>📊 Dashboard Ini Kebun</h1>
+
+<div class="box">👥 Total Pengunjung: <b id="visitors">-</b></div>
+<div class="box">📸 Total Scan: <b id="scans">-</b></div>
+
+<h3>🕒 Scan Terakhir</h3>
+<ul id="list"></ul>
+
+<script>
+fetch('/api/admin-stats')
+  .then(res => res.json())
+  .then(data => {
+    document.getElementById('visitors').innerText = data.visitors
+    document.getElementById('scans').innerText = data.scans
+
+    const list = document.getElementById('list')
+    data.latest.forEach(item => {
+      const li = document.createElement('li')
+      li.innerText = `${item.outlet_code} — ${new Date(item.created_at).toLocaleString()}`
+      list.appendChild(li)
+    })
+  })
+</script>
+
+</body>
+</html>
