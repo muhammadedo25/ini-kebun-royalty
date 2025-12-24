@@ -1,17 +1,12 @@
 import { createClient } from '@supabase/supabase-js'
-import { v4 as uuidv4 } from 'uuid'
-
-// --- ENV GUARD ---
-if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
-  throw new Error('Supabase ENV not set')
-}
+import crypto from 'crypto'
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_ANON_KEY
 )
 
-// --- COOKIE PARSER ---
+// helper cookie
 function getCookie(req, name) {
   const cookies = req.headers.cookie
   if (!cookies) return null
@@ -28,20 +23,14 @@ export default async function handler(req, res) {
     const outlet = req.query.outlet || 'UNKNOWN'
     let visitorKey = getCookie(req, 'visitor_key')
 
-    // =====================
     // VISITOR BARU
-    // =====================
     if (!visitorKey) {
-      visitorKey = uuidv4()
+      visitorKey = crypto.randomUUID()
 
-      const { error: insertVisitorError } = await supabase
-        .from('visitors')
-        .insert({
-          visitor_key: visitorKey,
-          total_visit: 1
-        })
-
-      if (insertVisitorError) throw insertVisitorError
+      await supabase.from('visitors').insert({
+        visitor_key: visitorKey,
+        total_visit: 1
+      })
 
       await supabase.from('scans').insert({
         visitor_key: visitorKey,
@@ -53,35 +42,17 @@ export default async function handler(req, res) {
         `visitor_key=${visitorKey}; Path=/; Max-Age=31536000; SameSite=Lax`
       )
 
-      return res.status(200).json({
-        status: 'new',
-        visit: 1
-      })
+      return res.json({ status: 'new', visit: 1 })
     }
 
-    // =====================
     // VISITOR LAMA
-    // =====================
-    const { data: visitor, error: visitorError } = await supabase
+    const { data: visitor } = await supabase
       .from('visitors')
       .select('*')
       .eq('visitor_key', visitorKey)
       .maybeSingle()
 
-    // Jika cookie ada tapi data hilang → treat as new
-    if (!visitor || visitorError) {
-      await supabase.from('visitors').insert({
-        visitor_key: visitorKey,
-        total_visit: 1
-      })
-
-      return res.json({
-        status: 'new',
-        visit: 1
-      })
-    }
-
-    const visit = visitor.total_visit + 1
+    const visit = (visitor?.total_visit || 0) + 1
 
     await supabase
       .from('visitors')
@@ -93,10 +64,7 @@ export default async function handler(req, res) {
       outlet_code: outlet
     })
 
-    return res.json({
-      status: 'return',
-      visit
-    })
+    return res.json({ status: 'return', visit })
 
   } catch (err) {
     console.error(err)
