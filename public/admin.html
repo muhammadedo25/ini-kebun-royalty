@@ -1,84 +1,155 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <title>Admin Ini Kebun</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <style>
-      body {
-        font-family: system-ui;
-        padding: 20px;
-        background: #f9f9f9;
-      }
-      h1 {
-        margin-bottom: 20px;
-      }
-      .box {
-        padding: 16px;
-        border-radius: 12px;
-        background: #f3f3f3;
-        margin-bottom: 12px;
-      }
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 12px;
-      }
-      th,
-      td {
-        border: 1px solid #ccc;
-        padding: 8px;
-        text-align: left;
-      }
-      th {
-        background: #eee;
-      }
-    </style>
-  </head>
-  <body>
-    <h1>📊 Dashboard Ini Kebun</h1>
-    <div class="box">👥 Total Pengunjung: <b id="visitors">-</b></div>
-    <div class="box">📸 Total Scan: <b id="scans">-</b></div>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Ini Kebun - Real-time</title>
+  <style>
+    * { box-sizing: border-box; margin:0; padding:0; }
+    body { font-family: system-ui, sans-serif; background: #f4f4f4; padding: 20px; }
+    h1 { text-align: center; margin-bottom: 20px; color: #333; }
+    
+    .stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    .card {
+      background: #fff;
+      padding: 20px;
+      border-radius: 15px;
+      flex: 1 1 150px;
+      min-width: 140px;
+      text-align: center;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    .card b { font-size: 24px; display: block; margin-top: 8px; color: #2c7; }
 
-    <h3>🧍 Daftar Pengunjung</h3>
-    <table>
-      <thead>
-        <tr>
-          <th>Nama Visitor</th>
-          <th>Total Visit</th>
-          <th>Pertama Datang</th>
-        </tr>
-      </thead>
-      <tbody id="visitorList"></tbody>
-    </table>
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; background: #fff; border-radius: 10px; overflow: hidden; display: block; max-height: 250px; overflow-y: auto; }
+    thead { background: #2575fc; color: #fff; display: table; width: 100%; table-layout: fixed; }
+    tbody { display: block; width: 100%; }
+    th, td { padding: 12px 8px; border-bottom: 1px solid #ddd; text-align: left; }
+    tbody tr:hover { background: #f1f1f1; }
+    th { font-weight: bold; }
 
-    <h3>🕒 Scan Terakhir</h3>
-    <ul id="list"></ul>
+    h3 { margin-top: 20px; margin-bottom: 8px; color: #555; }
+    ul { list-style: none; padding-left: 0; max-height: 200px; overflow-y: auto; background: #fff; border-radius: 10px; padding: 12px; box-shadow: 0 3px 10px rgba(0,0,0,0.05); }
+    li { padding: 8px 0; border-bottom: 1px solid #eee; font-size: 14px; }
+    li:last-child { border-bottom: none; }
 
-    <script>
-      fetch("/api/admin-stats")
-        .then((res) => res.json())
-        .then((data) => {
-          document.getElementById("visitors").innerText = data.totalVisitors;
-          document.getElementById("scans").innerText = data.totalScans;
+    .new-visitor { background: #d1ffd6; animation: highlight 2s ease; }
+    @keyframes highlight { from { background: #d1ffd6; } to { background: #fff; } }
 
-          const tbody = document.getElementById("visitorList");
-          data.visitors.forEach((v) => {
-            const tr = document.createElement("tr");
-            tr.innerHTML = `<td>${v.name || "Anonim"}</td><td>${
-              v.total_visit
-            }</td><td>${new Date(v.created_at).toLocaleDateString()}</td>`;
-            tbody.appendChild(tr);
-          });
+    @media (max-width: 600px) {
+      .stats { flex-direction: column; }
+      table thead, table tbody, table th, table td, table tr { display: block; }
+      table thead tr { position: absolute; top: -9999px; left: -9999px; }
+      table tr { margin-bottom: 12px; border-bottom: 1px solid #ddd; }
+      table td { border: none; padding-left: 50%; position: relative; text-align: left; }
+      table td:before { position: absolute; left: 12px; width: 45%; white-space: nowrap; font-weight: bold; }
+      table td:nth-of-type(1):before { content: "Nama Visitor"; }
+      table td:nth-of-type(2):before { content: "Total Visit"; }
+      table td:nth-of-type(3):before { content: "Pertama Datang"; }
+    }
+  </style>
+</head>
+<body>
 
-          const list = document.getElementById("list");
-          data.latest.forEach((item) => {
-            const li = document.createElement("li");
-            li.innerText = `${item.name} — ${item.outlet_code} — ${new Date(
-              item.created_at
-            ).toLocaleString("id-ID", { timeZone: "Asia/Jakarta" })}`;
-            list.appendChild(li);
-          });
-        });
-    </script>
-  </body>
+<h1>📊 Dashboard Ini Kebun (Real-time)</h1>
+
+<div class="stats">
+  <div class="card">
+    👥 Total Pengunjung
+    <b id="visitors">-</b>
+  </div>
+  <div class="card">
+    📸 Total Scan
+    <b id="scans">-</b>
+  </div>
+</div>
+
+<h3>🧍 Daftar Pengunjung</h3>
+<table>
+  <thead>
+    <tr>
+      <th>Nama Visitor</th>
+      <th>Total Visit</th>
+      <th>Pertama Datang</th>
+    </tr>
+  </thead>
+  <tbody id="visitorList"></tbody>
+</table>
+
+<h3>🕒 Scan Terakhir</h3>
+<ul id="list"></ul>
+
+<script>
+  const visitorList = document.getElementById('visitorList');
+  const scanList = document.getElementById('list');
+  const visitorsCount = document.getElementById('visitors');
+  const scansCount = document.getElementById('scans');
+
+  let visitorsMap = new Map(); // untuk cek visitor baru
+  let lastScanId = null;       // untuk highlight scan terakhir
+
+  function formatWIB(dateStr){
+    const date = new Date(dateStr);
+    date.setHours(date.getHours() + 7); // WIB
+    const pad = n => n.toString().padStart(2, "0");
+    return `${pad(date.getDate())}/${pad(date.getMonth()+1)}/${date.getFullYear()} `+
+           `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+  }
+
+  async function fetchData() {
+    try {
+      const res = await fetch("/api/admin-stats");
+      const data = await res.json();
+
+      visitorsCount.innerText = data.totalVisitors;
+      scansCount.innerText = data.totalScans;
+
+      // Update daftar pengunjung
+      visitorList.innerHTML = '';
+      data.visitors.forEach(v => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${v.name || "Anonim"}</td>
+          <td>${v.total_visit}</td>
+          <td>${formatWIB(v.created_at)}</td>
+        `;
+        if(!visitorsMap.has(v.visitor_key)) {
+          tr.classList.add('new-visitor'); // highlight visitor baru
+        }
+        visitorsMap.set(v.visitor_key, v.total_visit);
+        visitorList.appendChild(tr);
+      });
+
+      // Update daftar scan terakhir
+      scanList.innerHTML = '';
+      data.latest.forEach(item => {
+        const visitor = data.visitors.find(v => v.visitor_key === item.visitor_key);
+        const name = visitor ? visitor.name : "Anonim";
+
+        const li = document.createElement('li');
+        li.innerText = `${name} — ${item.outlet_code} — ${formatWIB(item.created_at)}`;
+
+        if(lastScanId === null || item.created_at > lastScanId) {
+          li.classList.add('new-visitor'); // highlight scan terakhir
+        }
+        lastScanId = item.created_at;
+        scanList.appendChild(li);
+      });
+
+    } catch(err) {
+      console.error("Error fetch admin-stats:", err);
+    }
+  }
+
+  fetchData(); // load pertama
+  setInterval(fetchData, 5000); // update tiap 5 detik
+</script>
+
+</body>
 </html>
