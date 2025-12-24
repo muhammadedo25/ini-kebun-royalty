@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ini Kebun Coffee</title>
+<style>
+body {
+  font-family: sans-serif;
+  background: #f4f4f4;
+  padding: 40px;
+}
+.card {
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+  text-align: center;
+}
+</style>
+</head>
+<body>
+
+<div class="card" id="content">
+  <h2>⏳ Memproses...</h2>
+</div>
+
+<script>
+const outlet = new URLSearchParams(window.location.search).get('outlet') || 'INIKEBUN01'
+
+fetch(`/api/scan?outlet=${outlet}`)
+  .then(res => res.json())
+  .then(data => {
+    let html = ''
+
+    if (data.status === 'new') {
+      html = `<h2>🎉 Selamat Datang!</h2>
+              <p>Kamu adalah pengunjung baru</p>`
+    } else {
+      html = `<h2>☕ Selamat Datang Kembali</h2>
+              <p>Ini kunjungan ke <b>${data.visit}</b></p>`
+    }
+
+    if (data.visit === 5) {
+      html += `<h3>🎁 Gratis Kopi!</h3>`
+    }
+
+    if (data.visit === 10) {
+      html += `<h3>🔥 Diskon 50%</h3>`
+    }
+
+    document.getElementById('content').innerHTML = html
+  })
+</script>
+
+</body>
+</html>
