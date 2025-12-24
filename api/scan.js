@@ -10,9 +10,7 @@ const supabase = createClient(
 function getCookie(req, name) {
   const cookies = req.headers.cookie;
   if (!cookies) return null;
-
   const match = cookies.split(";").find((c) => c.trim().startsWith(name + "="));
-
   return match ? match.split("=")[1] : null;
 }
 
@@ -21,33 +19,51 @@ export default async function handler(req, res) {
     const outlet = req.query.outlet || "UNKNOWN";
     let visitorKey = getCookie(req, "visitor_key");
 
-    // visitor baru
+    // Visitor baru
     if (!visitorKey) {
       visitorKey = crypto.randomUUID();
-      const name = req.query.name || "Anonim";
+      const name = req.query.name; // optional: jika ada dari form
 
+      // jika belum ada nama, tampil form input nama
+      if (!name) {
+        return res.status(200).send(`
+          <!DOCTYPE html>
+          <html>
+          <head><title>Input Nama</title></head>
+          <body>
+            <h2>Masukkan Nama Anda</h2>
+            <form method="GET">
+              <input type="text" name="name" required>
+              <button type="submit">Kirim</button>
+            </form>
+          </body>
+          </html>
+        `);
+      }
+
+      // simpan visitor baru
       await supabase.from("visitors").insert({
         visitor_key: visitorKey,
         name,
-        total_visit: 1,
+        total_visit: 1
       });
 
+      // simpan scan
       await supabase.from("scans").insert({
         visitor_key: visitorKey,
-        outlet_code: outlet,
+        outlet_code: outlet
       });
 
+      // set cookie
       res.setHeader(
         "Set-Cookie",
         `visitor_key=${visitorKey}; Path=/; Max-Age=31536000; SameSite=Lax`
       );
 
-      return res.redirect(
-        `/visit.html?status=new&visit=1&name=${encodeURIComponent(name)}`
-      );
+      return res.redirect(`/visit.html?status=new&visit=1&name=${encodeURIComponent(name)}`);
     }
 
-    // VISITOR LAMA
+    // Visitor lama
     const { data: visitor } = await supabase
       .from("visitors")
       .select("*")
@@ -63,15 +79,15 @@ export default async function handler(req, res) {
 
     await supabase.from("scans").insert({
       visitor_key: visitorKey,
-      outlet_code: outlet,
+      outlet_code: outlet
     });
 
-    return res.redirect(`/visit.html?status=return&visit=${visit}`);
+    return res.redirect(`/visit.html?status=return&visit=${visit}&name=${encodeURIComponent(visitor?.name || "Anonim")}`);
   } catch (err) {
     console.error(err);
     return res.status(500).json({
       error: "Server error",
-      message: err.message,
+      message: err.message
     });
   }
 }
