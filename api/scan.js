@@ -6,7 +6,6 @@ const supabase = createClient(
   process.env.SUPABASE_ANON_KEY
 );
 
-// helper untuk ambil cookie
 function getCookie(req, name) {
   const cookies = req.headers.cookie;
   if (!cookies) return null;
@@ -17,21 +16,29 @@ function getCookie(req, name) {
 export default async function handler(req, res) {
   try {
     const outlet = req.query.outlet || "UNKNOWN";
-    const nameFromQuery = req.query.name; // optional dari form
+    const nameFromQuery = req.query.name;
     let visitorKey = getCookie(req, "visitor_key");
 
     // ===== Visitor baru =====
     if (!visitorKey) {
-      // Jika belum ada nama, minta input dari user
+      // Jika belum ada nama, tampilkan form
       if (!nameFromQuery) {
         return res.status(200).send(`
           <!DOCTYPE html>
           <html>
-          <head><title>Input Nama</title></head>
+          <head>
+            <meta charset="UTF-8">
+            <title>Input Nama</title>
+            <style>
+              body { font-family: system-ui; text-align: center; padding: 40px }
+              input { padding: 10px; font-size: 16px; width: 200px; }
+              button { padding: 10px 20px; font-size: 16px; margin-top: 10px; }
+            </style>
+          </head>
           <body>
-            <h2>Masukkan Nama Anda</h2>
+            <h2>Selamat datang! Masukkan Nama Anda</h2>
             <form method="GET">
-              <input type="text" name="name" required>
+              <input type="text" name="name" required placeholder="Nama Anda">
               <button type="submit">Kirim</button>
             </form>
           </body>
@@ -42,24 +49,22 @@ export default async function handler(req, res) {
       visitorKey = crypto.randomUUID();
       const name = nameFromQuery;
 
-      // Insert visitor dulu
+      // simpan visitor
       const { error: visitorError } = await supabase.from("visitors").insert({
         visitor_key: visitorKey,
         name,
         total_visit: 1
       });
-
       if (visitorError) throw visitorError;
 
-      // Insert scan setelah visitor berhasil
+      // simpan scan
       const { error: scanError } = await supabase.from("scans").insert({
         visitor_key: visitorKey,
         outlet_code: outlet
       });
-
       if (scanError) throw scanError;
 
-      // Set cookie
+      // set cookie
       res.setHeader(
         "Set-Cookie",
         `visitor_key=${visitorKey}; Path=/; Max-Age=31536000; SameSite=Lax`
@@ -74,37 +79,34 @@ export default async function handler(req, res) {
       .select("*")
       .eq("visitor_key", visitorKey)
       .maybeSingle();
-
     if (fetchError) throw fetchError;
 
-    if (!visitor) {
-      // VisitorKey cookie ada tapi tidak ditemukan di database
-      // Bisa jadi database di-reset, maka treat sebagai visitor baru
-      return res.redirect(`/visit.html?outlet=${encodeURIComponent(outlet)}`);
-    }
+    // Jika cookie ada tapi visitor hilang (misal db reset)
+    if (!visitor) return res.redirect(`/api/scan?outlet=${encodeURIComponent(outlet)}`);
 
     const visit = (visitor.total_visit || 0) + 1;
 
+    // update total_visit
     const { error: updateError } = await supabase
       .from("visitors")
       .update({ total_visit: visit })
       .eq("visitor_key", visitorKey);
-
     if (updateError) throw updateError;
 
+    // insert scan
     const { error: scanError } = await supabase.from("scans").insert({
       visitor_key: visitorKey,
       outlet_code: outlet
     });
-
     if (scanError) throw scanError;
 
     return res.redirect(`/visit.html?status=return&visit=${visit}&name=${encodeURIComponent(visitor.name)}`);
+
   } catch (err) {
     console.error(err);
-    return res.status(500).json({
-      error: "Server error",
-      message: err.message
-    });
+    return res.status(500).send(`
+      <h1>Server Error</h1>
+      <p>${err.message}</p>
+    `);
   }
 }
